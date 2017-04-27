@@ -8,7 +8,7 @@ Created on Thu Apr 27 11:09:09 2017
 # Importing libraries
 # Might be useful to set your working directory before hand in my case D:\COPERNICUS
 import sys
-# This path might change in your pc, just look at the path where you snap-python folder is located
+# This path might change in your pc, just look at the path where your snap-python folder is located
 # In some computers this line is not required
 sys.path.append('C:\\Users\\MrRobot\\.snap\\snap-python')
 from snappy import jpy
@@ -112,7 +112,7 @@ def geometricCorrection (speckle, toPrint = True):
     
 
 
-# This arcuments correpond to the rectangle that I want to subset from the original image
+# These arguments correpond to the rectangle that I want to subset from the original image
 x = 18727
 y = 15438
 width = 6186
