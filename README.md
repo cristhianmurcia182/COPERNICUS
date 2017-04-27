@@ -9,3 +9,4 @@ With this functions you can achieve:
 <p>3: Pre-processing - Speckle filtering</p>
 <p>4: Post-processing - Geometric correction</p>
 
+<p>Please open the Figures folder to check the output of this functions.</p>
