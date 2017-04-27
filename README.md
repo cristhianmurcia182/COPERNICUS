@@ -4,7 +4,8 @@ In the file preprocessing.py I have defined the functions needed to pre-process 
 
 With this functions you can achieve:
 
-1: Data preparation
-2: Pre-processing - Calibration
-3: Pre-processing - Speckle filtering
-4: Post-processing - Geometric correction
+<p>1: Data preparation</p>
+<p>2: Pre-processing - Calibration</p>
+<p>3: Pre-processing - Speckle filtering</p>
+<p>4: Post-processing - Geometric correction</p>
+
