@@ -71,7 +71,7 @@ def deleteElementJson(jsonPath, data, filename):
 
 def writeProcessStatusInJson(jsonPath, data):
     with open(jsonPath, 'w') as outfile:
-        json.dump(data, outfile)
+        json.dump(data, outfile, sort_keys=True)
 
 
 def readProcessStatusInJson(jsonPath):
@@ -144,7 +144,7 @@ def isProcessing():
     time.sleep(10)
     processStatusJSon = processStatusPath + "processing.json"
     data = readProcessStatusInJson(processStatusJSon)
-    for processingFilename in data:
+    if data:
         return True
 
     return False
