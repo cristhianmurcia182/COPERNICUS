@@ -1,6 +1,8 @@
-<<<<<<< HEAD
 **/EJEMPLO/**/*
 **/subset/**/*
-=======
+**/.idea/**/*
 Snap graph/readbucket.bat
->>>>>>> 83bbb3d60645c82415b4d246b6325aeba89d69a0
+Snapgraph/readbucket.bat
+Snapgraph/configuration.json
+Snapgraph/messageResponse.json
+Snapgraph/s3bucketpolicy.json
