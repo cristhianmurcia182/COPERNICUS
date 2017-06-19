@@ -59,7 +59,7 @@ def readFiles():
 
     print "downloading raw image %s" % filename
 
-    downloadFile(inputPath, filename, BUCKET_NAME_RAW_IMAGES)
+    # downloadFile(inputPath, filename, BUCKET_NAME_RAW_IMAGES)
 
     print "starting preprocessing"
 
@@ -87,7 +87,7 @@ def preprocessImage(filename):
     noneExtensionFilename = filename.replace(inputFileExtension, "")
     print "output:" + noneExtensionFilename + outputFileExtension
     command = "gpt %sPreProcess.xml -Pfilename=\"%s%s\" -Poutputfilename=\"%s%s%s\"" % (
-        processXMLPath, inputPath, filename, outputPath + "\\" + noneExtensionFilename + "\\", noneExtensionFilename,
+        processXMLPath, inputPath, filename, outputPath + noneExtensionFilename + "/", noneExtensionFilename,
         outputFileExtension)
     print command
 
