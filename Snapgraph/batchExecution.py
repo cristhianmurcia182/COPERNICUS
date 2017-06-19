@@ -59,7 +59,7 @@ def readFiles():
 
     print "downloading raw image %s" % filename
 
-    # downloadFile(inputPath, filename, BUCKET_NAME_RAW_IMAGES)
+    downloadFile(inputPath, filename, BUCKET_NAME_RAW_IMAGES)
 
     print "starting preprocessing"
 
