@@ -1,8 +1,10 @@
 import json
 import os
 import subprocess
+import sys
 import thread
 import time
+import traceback
 import zipfile
 
 import catch_errors as ce
@@ -93,6 +95,7 @@ def preprocessImage(filename):
         os.system(command)
     except:
         print "Error: unable to start thread"
+        traceback.print_exc(file=sys.stdout)
         # here is necessary to add the error management procedure
 
     endTime = time.time()
@@ -142,7 +145,7 @@ def getProcessID(filename):
         if filename in process[0]:
             return process[1]
 
-    return None
+    return ""
 
 
 def addProcessStatusDataToJson(filename, data, jsonData):
@@ -193,6 +196,7 @@ try:
     readFiles()
 except:
     print "Error: unable to start thread"
+    traceback.print_exc(file=sys.stdout)
 
 
 def isProcessing():

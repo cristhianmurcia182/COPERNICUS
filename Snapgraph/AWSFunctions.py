@@ -2,6 +2,8 @@
 import json
 import os
 import subprocess
+import sys
+import traceback
 
 import boto3
 
@@ -16,6 +18,7 @@ def connect():
 
 def getDefaultConfigurationFile():
     return getConfigurationFile("/home/ubuntu/COPERNICUS-master/Snapgraph/configuration.json")
+
 
 def getConfigurationFile(jsonPath):
     with open(jsonPath, 'r') as outfile:
@@ -73,7 +76,8 @@ def downloadFile(writeble_path, filename, bucket_path):
     # s3_client = boto3.client('s3')
     # s3_client.download_file(bucket_name, filename, writeble_path + filename)
 
-    download_command = "aws s3 cp s3://%s/%s %s" % (bucket_path, filename, writeble_path + filename)
+    # download_command = "aws s3 cp s3://%s/%s %s" % (bucket_path, filename, writeble_path + filename)
+    download_command = ["aws", "s3", "cp", "s3://%s/%s" % (bucket_path, filename), writeble_path + filename]
     print download_command
 
     try:
@@ -86,6 +90,7 @@ def downloadFile(writeble_path, filename, bucket_path):
         print "Command output: " + output
     except:
         print "Error: unable to download"
+        traceback.print_exc(file=sys.stdout)
 
 
 def uploadFolder(writeble_path, folder_name, bucket_path):
@@ -97,8 +102,9 @@ def uploadFolder(writeble_path, folder_name, bucket_path):
     # s3_client = boto3.client('s3')
     # s3_client.download_file(bucket_name, filename, writeble_path + filename)
     print "uploading folder"
-    # upload_command = "aws s3 cp %s s3://%s/%s" % (bucket_path, writeble_path + filename, filename)
-    upload_command = "aws s3 cp %s%s s3://%s/%s/ --recursive" % (writeble_path, folder_name, bucket_path, folder_name)
+    # upload_command = "aws s3 cp %s%s s3://%s/%s/ --recursive" % (writeble_path, folder_name, bucket_path, folder_name)
+    upload_command = ["aws", "s3", "cp", writeble_path + folder_name, "s3://%s/%s/" % (bucket_path, folder_name),
+                      "--recursive"]
     print upload_command
 
     try:
@@ -111,6 +117,7 @@ def uploadFolder(writeble_path, folder_name, bucket_path):
         print "Command output: " + output
     except:
         print "Error: unable to upload folder"
+        traceback.print_exc(file=sys.stdout)
 
 
 def uploadFile(file_path, bucket_path):
@@ -122,8 +129,8 @@ def uploadFile(file_path, bucket_path):
     # s3_client = boto3.client('s3')
     # s3_client.download_file(bucket_name, filename, writeble_path + filename)
     print "uploading file"
-    # upload_command = "aws s3 cp %s s3://%s/%s" % (bucket_path, writeble_path + filename, filename)
-    upload_command = "aws s3 cp %s s3://%s/" % (file_path, bucket_path)
+    # upload_command = "aws s3 cp %s s3://%s/" % (file_path, bucket_path)
+    upload_command = ["aws", "s3", "cp", file_path, "s3://%s/" % bucket_path]
     print upload_command
 
     try:
@@ -136,3 +143,4 @@ def uploadFile(file_path, bucket_path):
         print "Command output: " + output
     except:
         print "Error: unable to upload file"
+        traceback.print_exc(file=sys.stdout)
