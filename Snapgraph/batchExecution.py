@@ -3,9 +3,10 @@ import os
 import subprocess
 import thread
 import time
+import zipfile
 
 import catch_errors as ce
-from AWSFunctions import connect, getNotificationIDAndResourceName, deleteMessage, downloadFile, uploadFolder, \
+from AWSFunctions import connect, getNotificationIDAndResourceName, downloadFile, uploadFile, \
     getDefaultConfigurationFile
 
 configuration = getDefaultConfigurationFile()
@@ -99,8 +100,10 @@ def preprocessImage(filename):
     # start to upload the preprocessed resulting image
     outputFileName = filename.replace(inputFileExtension, "")
 
-    uploadFolder(outputPath, outputFileName,
-                 BUCKET_NAME_PROCESSED_IMAGES + "/" + BUCKET_FOLDER_NAME_PREPROCESSED_IMAGES)
+    zip_filename = zipDirectory(outputPath, outputFileName)
+
+    uploadFile(outputPath + zip_filename,
+               BUCKET_NAME_PROCESSED_IMAGES + "/" + BUCKET_FOLDER_NAME_PREPROCESSED_IMAGES)
     # end of uploading
 
     processStatusJSon = processStatusPath + "processing.json"
@@ -168,6 +171,22 @@ def readProcessStatusInJson(jsonPath):
     with open(jsonPath, 'r') as outfile:
         data = json.load(outfile)
     return data
+
+
+def zipDirectory(path, folder_name):
+    zip_filename = folder_name + ".zip"
+    zipf = zipfile.ZipFile(path + zip_filename, "w", zipfile.ZIP_DEFLATED, allowZip64=True)
+
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            if zip_filename != file:
+                absolute_path = os.path.join(root, file)
+                relative_path = absolute_path.replace(path, "")
+                zipf.write(os.path.join(root, file), relative_path)
+
+    zipf.close()
+
+    return zip_filename
 
 
 try:

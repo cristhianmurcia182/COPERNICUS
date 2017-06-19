@@ -110,4 +110,29 @@ def uploadFolder(writeble_path, folder_name, bucket_path):
         p_status = p.wait()
         print "Command output: " + output
     except:
-        print "Error: unable to download"
+        print "Error: unable to upload folder"
+
+
+def uploadFile(file_path, bucket_path):
+    # s3 = boto3.resource('s3')
+    # bucket = s3.Bucket(bucket_name)
+    #
+    # with open(writeble_path + filename, "wb") as f:
+    #     bucket.download_fileobj(filename, f)
+    # s3_client = boto3.client('s3')
+    # s3_client.download_file(bucket_name, filename, writeble_path + filename)
+    print "uploading file"
+    # upload_command = "aws s3 cp %s s3://%s/%s" % (bucket_path, writeble_path + filename, filename)
+    upload_command = "aws s3 cp %s s3://%s/" % (file_path, bucket_path)
+    print upload_command
+
+    try:
+        # os.system(upload_command)
+        p = subprocess.Popen(upload_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (output, err) = p.communicate()
+
+        # This makes the wait possible
+        p_status = p.wait()
+        print "Command output: " + output
+    except:
+        print "Error: unable to upload file"
