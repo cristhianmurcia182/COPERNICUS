@@ -15,8 +15,7 @@ def connect():
 
 
 def getDefaultConfigurationFile():
-    return getConfigurationFile("D:\Jeison\Github\COPERNICUS\Snapgraph\configuration.json")
-
+    return getConfigurationFile("/home/ubuntu/COPERNICUS-master/Snapgraph/configuration.json")
 
 def getConfigurationFile(jsonPath):
     with open(jsonPath, 'r') as outfile:
