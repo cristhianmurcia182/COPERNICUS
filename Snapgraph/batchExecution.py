@@ -1,19 +1,25 @@
 import json
 import os
+import subprocess
 import thread
 import time
-import subprocess
+
 import catch_errors as ce
+from AWSFunctions import connect, getNotificationIDAndResourceName, deleteMessage, downloadFile, uploadFolder, \
+    getDefaultConfigurationFile
 
-#processXMLPath = "D:\ifgi\Copernicus\SnapAutomation\\batch\\"
-#inputPath = "D:\ifgi\Copernicus\SnapAutomation\Input\\"
-#outputPath = "D:\ifgi\Copernicus\SnapAutomation\Output\\"
-#processStatusPath = "D:\ifgi\Copernicus\SnapAutomation\ProcessStatus\\"
+configuration = getDefaultConfigurationFile()
 
-processXMLPath = "D:\COPERNICUS\\12_Preprocessing\\"
-inputPath = "D:\COPERNICUS\\12_Preprocessing\input\\"
-outputPath = "D:\COPERNICUS\\12_Preprocessing\output\\"
-processStatusPath = "D:\COPERNICUS\\12_Preprocessing\processStatus\\"
+processXMLPath = configuration["processXMLPath"]
+inputPath = configuration["inputPath"]
+outputPath = configuration["outputPath"]
+processStatusPath = configuration["processStatusPath"]
+inputFileExtension = configuration["inputFileExtension"]
+outputFileExtension = configuration["outputFileExtension"]
+exportFileExtension = configuration["exportFileExtension"]
+BUCKET_NAME_RAW_IMAGES = configuration["BUCKET_NAME_RAW_IMAGES"]
+BUCKET_NAME_PROCESSED_IMAGES = configuration["BUCKET_NAME_PROCESSED_IMAGES"]
+BUCKET_FOLDER_NAME_PREPROCESSED_IMAGES = configuration["BUCKET_FOLDER_NAME_PREPROCESSED_IMAGES"]
 
 
 def writeProcessStatusFiles():
@@ -41,27 +47,45 @@ ProcessStatus = enum(PROCESSING='PROCESSING', PROCESSED='PROCESSED', ERROR='ERRO
 
 
 def readFiles():
-    listdir = os.listdir(inputPath)
-    for filename in listdir:
-        if ce.checkMissingFiles(inputPath, filename):
-            startTime = time.time()
-            thread.start_new_thread(processImage, (filename,))
-            pid = getProcessID(filename)
-            processStatusJSon = processStatusPath + "processing.json"
-            data = readProcessStatusInJson(processStatusJSon)
-            jsonData = {
-                "pid": pid,
-                "status: ": ProcessStatus.PROCESSING,
-                "starttime": startTime
-            }
+    connect()
+    receipt_handle, filename = getNotificationIDAndResourceName()
+    if receipt_handle is None:
+        return
 
-            addProcessStatusDataToJson(filename, data, jsonData)
-            writeProcessStatusInJson(processStatusJSon, data)
+    # deleteMessage(receipt_handle)
 
-def processImage(filename):
+    print "downloading raw image %s" % filename
+
+    downloadFile(inputPath, filename, BUCKET_NAME_RAW_IMAGES)
+
+    print "starting preprocessing"
+
+    # listdir = os.listdir(inputPath)
+    # for filename in listdir:
+
+    if ce.checkMissingFiles(inputPath, filename):
+        startTime = time.time()
+        thread.start_new_thread(preprocessImage, (filename,))
+        pid = getProcessID(filename)
+        processStatusJSon = processStatusPath + "processing.json"
+        data = readProcessStatusInJson(processStatusJSon)
+        jsonData = {
+            "pid": pid,
+            "status: ": ProcessStatus.PROCESSING,
+            "starttime": startTime
+        }
+
+        addProcessStatusDataToJson(filename, data, jsonData)
+        writeProcessStatusInJson(processStatusJSon, data)
+
+
+def preprocessImage(filename):
     print "Star time: %s" % time.ctime(time.time())
-    command = "gpt %sPreProcess.xml -Pfilename=\"%s%s\" -Poutputfilename=\"%s%s.dim\"" % (
-        processXMLPath, inputPath, filename, outputPath, filename)
+    noneExtensionFilename = filename.replace(inputFileExtension, "")
+    print "output:" + noneExtensionFilename + outputFileExtension
+    command = "gpt %sPreProcess.xml -Pfilename=\"%s%s\" -Poutputfilename=\"%s%s%s\"" % (
+        processXMLPath, inputPath, filename, outputPath + "\\" + noneExtensionFilename + "\\", noneExtensionFilename,
+        outputFileExtension)
     print command
 
     try:
@@ -71,6 +95,13 @@ def processImage(filename):
         # here is necessary to add the error management procedure
 
     endTime = time.time()
+
+    # start to upload the preprocessed resulting image
+    outputFileName = filename.replace(inputFileExtension, "")
+
+    uploadFolder(outputPath, outputFileName,
+                 BUCKET_NAME_PROCESSED_IMAGES + "/" + BUCKET_FOLDER_NAME_PREPROCESSED_IMAGES)
+    # end of uploading
 
     processStatusJSon = processStatusPath + "processing.json"
     data = readProcessStatusInJson(processStatusJSon)
@@ -135,14 +166,12 @@ def writeProcessStatusInJson(jsonPath, data):
 
 def readProcessStatusInJson(jsonPath):
     with open(jsonPath, 'r') as outfile:
-        print "JSON Status"
         data = json.load(outfile)
     return data
 
 
-
 try:
-    thread.start_new_thread(readFiles, ())
+    readFiles()
 except:
     print "Error: unable to start thread"
 

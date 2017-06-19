@@ -6,3 +6,4 @@ Snapgraph/readbucket.bat
 Snapgraph/configuration.json
 Snapgraph/messageResponse.json
 Snapgraph/s3bucketpolicy.json
+*.pyc
