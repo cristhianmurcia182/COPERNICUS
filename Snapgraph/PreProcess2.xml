@@ -1,0 +1,61 @@
+<graph id="Graph">
+  <version>1.0</version>
+  <node id="Read">
+    <operator>Read</operator>
+    <sources/>
+    <parameters class="com.bc.ceres.binding.dom.XppDomElement">
+      <file>${filename}</file>
+	  
+    </parameters>
+  </node>
+  <node id="Calibration">
+    <operator>Calibration</operator>
+    <sources>
+      <sourceProduct refid="Read"/>
+    </sources>
+    <parameters class="com.bc.ceres.binding.dom.XppDomElement">
+      <sourceBands/>
+      <auxFile>Product Auxiliary File</auxFile>
+      <externalAuxFile/>
+      <outputImageInComplex>false</outputImageInComplex>
+      <outputImageScaleInDb>false</outputImageScaleInDb>
+      <createGammaBand>false</createGammaBand>
+      <createBetaBand>false</createBetaBand>
+      <selectedPolarisations>VH</selectedPolarisations>
+      <outputSigmaBand>true</outputSigmaBand>
+      <outputGammaBand>false</outputGammaBand>
+      <outputBetaBand>false</outputBetaBand>
+    </parameters>
+  </node>
+  <node id="Write">
+    <operator>Write</operator>
+    <sources>
+      <sourceProduct refid="LinearToFromdB"/>
+    </sources>
+    <parameters class="com.bc.ceres.binding.dom.XppDomElement">
+      <file>${outputfilename}</file>
+      <formatName>BEAM-DIMAP</formatName>
+    </parameters>
+  </node>
+  <applicationData id="Presentation">
+    <Description/>
+    <node id="Read">
+            <displayPosition x="59.0" y="20.0"/>
+    </node>
+    <node id="Calibration">
+      <displayPosition x="61.0" y="81.0"/>
+    </node>
+    <node id="Speckle-Filter">
+      <displayPosition x="150.0" y="87.0"/>
+    </node>
+    <node id="Terrain-Correction">
+      <displayPosition x="276.0" y="82.0"/>
+    </node>
+    <node id="LinearToFromdB">
+      <displayPosition x="415.0" y="93.0"/>
+    </node>
+    <node id="Write">
+            <displayPosition x="249.0" y="214.0"/>
+    </node>
+  </applicationData>
+</graph>
