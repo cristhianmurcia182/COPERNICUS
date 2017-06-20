@@ -5,7 +5,6 @@
     <sources/>
     <parameters class="com.bc.ceres.binding.dom.XppDomElement">
       <file>${filename}</file>
-	  
     </parameters>
   </node>
   <node id="Calibration">
@@ -31,9 +30,10 @@
     <operator>Write</operator>
     <sources>
       <sourceProduct refid="LinearToFromdB"/>
+      <sourceProduct.1 refid="Calibration"/>
     </sources>
     <parameters class="com.bc.ceres.binding.dom.XppDomElement">
-      <file>${outputfilename}</file>
+      <file>D:\ifgi\Copernicus\Snap automation\Output\${outputfilename}.dim</file>
       <formatName>BEAM-DIMAP</formatName>
     </parameters>
   </node>
@@ -43,19 +43,10 @@
             <displayPosition x="59.0" y="20.0"/>
     </node>
     <node id="Calibration">
-      <displayPosition x="61.0" y="81.0"/>
-    </node>
-    <node id="Speckle-Filter">
-      <displayPosition x="150.0" y="87.0"/>
-    </node>
-    <node id="Terrain-Correction">
-      <displayPosition x="276.0" y="82.0"/>
-    </node>
-    <node id="LinearToFromdB">
-      <displayPosition x="415.0" y="93.0"/>
+      <displayPosition x="98.0" y="93.0"/>
     </node>
     <node id="Write">
-            <displayPosition x="249.0" y="214.0"/>
+            <displayPosition x="217.0" y="73.0"/>
     </node>
   </applicationData>
 </graph>
