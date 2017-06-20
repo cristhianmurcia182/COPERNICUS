@@ -3,9 +3,7 @@
   <node id="Read">
     <operator>Read</operator>
     <sources/>
-    <parameters class="com.bc.ceres.binding.dom.XppDomElement">
-      <file>${filename}</file>
-    </parameters>
+    <parameters class="com.bc.ceres.binding.dom.XppDomElement"/>
   </node>
   <node id="Calibration">
     <operator>Calibration</operator>
@@ -14,13 +12,13 @@
     </sources>
     <parameters class="com.bc.ceres.binding.dom.XppDomElement">
       <sourceBands/>
-      <auxFile>Product Auxiliary File</auxFile>
+      <auxFile>Latest Auxiliary File</auxFile>
       <externalAuxFile/>
       <outputImageInComplex>false</outputImageInComplex>
       <outputImageScaleInDb>false</outputImageScaleInDb>
       <createGammaBand>false</createGammaBand>
       <createBetaBand>false</createBetaBand>
-      <selectedPolarisations>VH</selectedPolarisations>
+      <selectedPolarisations/>
       <outputSigmaBand>true</outputSigmaBand>
       <outputGammaBand>false</outputGammaBand>
       <outputBetaBand>false</outputBetaBand>
@@ -29,8 +27,7 @@
   <node id="Write">
     <operator>Write</operator>
     <sources>
-      <sourceProduct refid="LinearToFromdB"/>
-      <sourceProduct.1 refid="Calibration"/>
+      <sourceProduct refid="Calibration"/>
     </sources>
     <parameters class="com.bc.ceres.binding.dom.XppDomElement">
       <file>D:\ifgi\Copernicus\Snap automation\Output\${outputfilename}.dim</file>
@@ -40,13 +37,13 @@
   <applicationData id="Presentation">
     <Description/>
     <node id="Read">
-            <displayPosition x="59.0" y="20.0"/>
+            <displayPosition x="37.0" y="134.0"/>
     </node>
     <node id="Calibration">
-      <displayPosition x="98.0" y="93.0"/>
+      <displayPosition x="245.0" y="135.0"/>
     </node>
     <node id="Write">
-            <displayPosition x="217.0" y="73.0"/>
+            <displayPosition x="455.0" y="135.0"/>
     </node>
   </applicationData>
 </graph>
