@@ -1,0 +1,19 @@
+{
+  "AWS_ACCESS_KEY_ID": "<ACCESS-KEY>",
+  "AWS_SECRET_ACCESS_KEY": "<SECRET-ACCESS-KEY>",
+  "default.region": "eu-central-1",
+  "queue_url": "<SQS_URL>",
+  "processXMLPath": "<Path>",
+  "inputPath": "<Path>",
+  "outputPath": "<Path>",
+  "processStatusPath": "<Path>",
+  "inputFileExtension": ".SAFE",
+  "outputFileExtension": ".dim",
+  "exportFileExtension": ".img",
+  "BUCKET_NAME_RAW_IMAGES": "<BUCKENAME>",
+  "BUCKET_NAME_PROCESSED_IMAGES": "<BUCKETNAME>",
+  "BUCKET_FOLDER_NAME_PREPROCESSED_IMAGES": "<BUCKETFOLDER>",
+  "META_DATA_STATUS_KEY": "x-amz-meta-",
+  "META_DATA_ATTEMPTS_KEY": "x-amz-meta-",
+  "MAX_PREPROCESSING_ATTEMPTS": "3"
+}

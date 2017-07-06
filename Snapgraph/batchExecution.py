@@ -8,8 +8,12 @@ import traceback
 import zipfile
 
 import catch_errors as ce
-from AWSFunctions import connect, getNotificationIDAndResourceName, downloadFile, uploadFile, \
-    getDefaultConfigurationFile
+from AWSFunctions import connect, uploadFile, \
+    getDefaultConfigurationFile, sendNotificationMessage, updateFileMetadata, getFileMetadata, getNextFilename, \
+    downloadFile
+from Snapgraph.enumerations import ProcessStatus
+from Snapgraph.exceptions import OrbitNotIncludedException, VVBandNotIncludedException, VHBandNotIncludedException, \
+    PreprocessedCommandException
 
 configuration = getDefaultConfigurationFile()
 
@@ -23,6 +27,9 @@ exportFileExtension = configuration["exportFileExtension"]
 BUCKET_NAME_RAW_IMAGES = configuration["BUCKET_NAME_RAW_IMAGES"]
 BUCKET_NAME_PROCESSED_IMAGES = configuration["BUCKET_NAME_PROCESSED_IMAGES"]
 BUCKET_FOLDER_NAME_PREPROCESSED_IMAGES = configuration["BUCKET_FOLDER_NAME_PREPROCESSED_IMAGES"]
+MAX_PREPROCESSING_ATTEMPTS = int(configuration["MAX_PREPROCESSING_ATTEMPTS"])
+META_DATA_STATUS_KEY = configuration["META_DATA_STATUS_KEY"]
+META_DATA_ATTEMPTS_KEY = configuration["META_DATA_ATTEMPTS_KEY"]
 
 
 def writeProcessStatusFiles():
@@ -42,44 +49,94 @@ def writeProcessStatusFiles():
 writeProcessStatusFiles()
 
 
-def enum(**enums):
-    return type('Enum', (), enums)
-
-
-ProcessStatus = enum(PROCESSING='PROCESSING', PROCESSED='PROCESSED', ERROR='ERROR')
-
-
 def readFiles():
-    connect()
-    receipt_handle, filename = getNotificationIDAndResourceName()
-    if receipt_handle is None:
-        return
+    try:
+        connect()
+        #receipt_handle, filename, attempts = getNotificationIDAndResourceName()
 
-    # deleteMessage(receipt_handle)
+        filename = getNextFilename(BUCKET_NAME_RAW_IMAGES)
 
-    print "downloading raw image %s" % filename
+    except:
+        error_message = "Error: unable to read next file"
+        print error_message
+        traceback.print_exc(file=sys.stdout)
+        sendNotification(Exception(), error_message, None, 0)
 
-    downloadFile(inputPath, filename, BUCKET_NAME_RAW_IMAGES)
+    try:
+        if filename is None:
+            return
 
-    print "starting preprocessing"
+        # if receipt_handle is None:
+        #     return
+        # if attempts >= MAX_PREPROCESSING_ATTEMPTS:
+        #     return
 
-    # listdir = os.listdir(inputPath)
-    # for filename in listdir:
+        # deleteMessage(receipt_handle)
 
-    if ce.checkMissingFiles(inputPath, filename):
-        startTime = time.time()
-        thread.start_new_thread(preprocessImage, (filename,))
-        pid = getProcessID(filename)
-        processStatusJSon = processStatusPath + "processing.json"
-        data = readProcessStatusInJson(processStatusJSon)
-        jsonData = {
-            "pid": pid,
-            "status: ": ProcessStatus.PROCESSING,
-            "starttime": startTime
-        }
+        print "downloading raw image %s" % filename
+        attemptsString = getFileMetadata(BUCKET_NAME_RAW_IMAGES, filename, META_DATA_ATTEMPTS_KEY)
+        if attemptsString is None:
+            attempts = 0
+        else:
+            attempts = int(attemptsString)
 
-        addProcessStatusDataToJson(filename, data, jsonData)
-        writeProcessStatusInJson(processStatusJSon, data)
+        updateFileMetadata(BUCKET_NAME_RAW_IMAGES, filename,
+                           {
+                               META_DATA_STATUS_KEY: ProcessStatus.PROCESSING,
+                               META_DATA_ATTEMPTS_KEY: "%s" % (attempts + 1)
+                           })
+        downloadFile(inputPath, filename, BUCKET_NAME_RAW_IMAGES)
+
+        print "starting preprocessing"
+
+        # listdir = os.listdir(inputPath)
+        # for filename in listdir:
+
+        if ce.checkMissingFiles(inputPath, filename):
+            startTime = time.time()
+            thread.start_new_thread(preprocessImage, (filename))
+            pid = getProcessID(filename)
+            processStatusJSon = processStatusPath + "processing.json"
+            data = readProcessStatusInJson(processStatusJSon)
+            jsonData = {
+                "pid": pid,
+                "status: ": ProcessStatus.PROCESSING,
+                "starttime": startTime
+            }
+
+            addProcessStatusDataToJson(filename, data, jsonData)
+            writeProcessStatusInJson(processStatusJSon, data)
+    except OrbitNotIncludedException as err:
+        error_message = "Orbit error: {0}".format(err)
+        print(error_message)
+        sendNotification(err, error_message, filename, attempts)
+        updateFileMetadata(BUCKET_NAME_RAW_IMAGES, filename,
+                           {META_DATA_STATUS_KEY: ProcessStatus.ERROR})
+    except VVBandNotIncludedException as err:
+        error_message = "VV Band error: {0}".format(err)
+        print(error_message)
+        sendNotification(err, error_message, filename, attempts)
+        updateFileMetadata(BUCKET_NAME_RAW_IMAGES, filename,
+                           {META_DATA_STATUS_KEY: ProcessStatus.ERROR})
+    except VHBandNotIncludedException as err:
+        error_message = "VH error: {0}".format(err)
+        print(error_message)
+        sendNotification(err, error_message, filename, attempts)
+        updateFileMetadata(BUCKET_NAME_RAW_IMAGES, filename,
+                           {META_DATA_STATUS_KEY: ProcessStatus.ERROR})
+    except PreprocessedCommandException as err:
+        error_message = "Preprocessing command error: {0}".format(err)
+        print(error_message)
+        sendNotification(err, error_message, filename, attempts)
+        updateFileMetadata(BUCKET_NAME_RAW_IMAGES, filename,
+                           {META_DATA_STATUS_KEY: ProcessStatus.ERROR})
+    except:
+        error_message = "Error: unable to preprocess"
+        print error_message
+        traceback.print_exc(file=sys.stdout)
+        sendNotification(Exception(), error_message, filename, attempts)
+        updateFileMetadata(BUCKET_NAME_RAW_IMAGES, filename,
+                           {META_DATA_STATUS_KEY: ProcessStatus.ERROR})
 
 
 def preprocessImage(filename):
@@ -94,11 +151,14 @@ def preprocessImage(filename):
     try:
         os.system(command)
     except:
-        print "Error: unable to start thread"
+        print "Error: unable to start preprocessing command, preprocessImage()"
         traceback.print_exc(file=sys.stdout)
+        raise PreprocessedCommandException(
+            "Error trying to run the preprocessing GPT command for the file %s" % filename)
         # here is necessary to add the error management procedure
 
     endTime = time.time()
+    print "End time: %s" % time.ctime(time.time())
 
     # start to upload the preprocessed resulting image
     outputFileName = filename.replace(inputFileExtension, "")
@@ -128,7 +188,7 @@ def preprocessImage(filename):
     addProcessStatusDataToJson(filename, data, jsonData)
     writeProcessStatusInJson(processStatusJSon, data)
 
-    print "End time: %s" % time.ctime(time.time())
+    updateFileMetadata(BUCKET_NAME_RAW_IMAGES, filename, {META_DATA_STATUS_KEY: ProcessStatus.PROCESSED})
 
 
 def getProcessID(filename):
@@ -192,11 +252,20 @@ def zipDirectory(path, folder_name):
     return zip_filename
 
 
+def sendNotification(error, error_message, filename, attempts):
+    try:
+        sendNotificationMessage(filename, attempts)
+    except:
+        print "Error: unable to send message"
+        traceback.print_exc(file=sys.stdout)
+
+
 try:
     readFiles()
 except:
     print "Error: unable to start thread"
     traceback.print_exc(file=sys.stdout)
+    sendNotification(Exception(), "Unknown error")
 
 
 def isProcessing():
