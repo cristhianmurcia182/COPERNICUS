@@ -4,23 +4,26 @@ import os
 import subprocess
 import sys
 import traceback
+import urllib2
 
 import boto3
 import time
 
-from Snapgraph.enumerations import ProcessStatus
+from enumerations import ProcessStatus
 
 
 def connect():
     configuration = getDefaultConfigurationFile()
 
-    os.system("aws configure set AWS_ACCESS_KEY_ID " + configuration["AWS_ACCESS_KEY_ID"])
-    os.system("aws configure set AWS_SECRET_ACCESS_KEY " + configuration["AWS_SECRET_ACCESS_KEY"])
-    os.system("aws configure set default.region " + configuration["default.region"])
+    os.system("/home/ubuntu/anaconda2/bin/aws configure set AWS_ACCESS_KEY_ID " + configuration["AWS_ACCESS_KEY_ID"])
+    os.system(
+        "/home/ubuntu/anaconda2/bin/aws configure set AWS_SECRET_ACCESS_KEY " + configuration["AWS_SECRET_ACCESS_KEY"])
+    os.system("/home/ubuntu/anaconda2/bin/aws configure set default.region " + configuration["default.region"])
 
 
 def getDefaultConfigurationFile():
-    return getConfigurationFile("/home/ubuntu/COPERNICUS-master/Snapgraph/configuration.json")
+    return getConfigurationFile("/home/ubuntu/COPERNICUS/Snapgraph/configuration.json")
+    # return getConfigurationFile("D:\Jeison\Github\COPERNICUS\Snapgraph\configuration.json")
 
 
 def getConfigurationFile(jsonPath):
@@ -32,7 +35,9 @@ def getConfigurationFile(jsonPath):
 def getNotificationIDAndResourceName():
     sqs = boto3.client('sqs')
 
-    queue_url = 'https://sqs.eu-central-1.amazonaws.com/837005286527/preprocess_image_queue'
+    configuration = getDefaultConfigurationFile()
+
+    queue_url = configuration["queue_url"]
     # water-detection-image-queue
 
     # Receive message from SQS queue
@@ -79,20 +84,57 @@ def getNextFilename(bucketName):
     for key in bucket.objects.all():
         # print(key.key)
         file = s3.Object(bucketName, key.key)
-        if META_DATA_STATUS_KEY not in file.metadata:
-            return file.key
-        elif file.metadata[META_DATA_STATUS_KEY] == ProcessStatus.ERROR:
-            if META_DATA_ATTEMPTS_KEY in file.metadata:
-                attempts = int(file.metadata[META_DATA_ATTEMPTS_KEY])
-                if attempts < MAX_PREPROCESSING_ATTEMPTS:
-                    return file.key
-
+        dateOfFile = extractDateFromFileName(file.key)
+        year = dateOfFile[0:4]
+        month = dateOfFile[4:6]
+        if year == "2017" and month == "06":
+            if META_DATA_STATUS_KEY not in file.metadata:
+                return file.key
+            elif file.metadata[META_DATA_STATUS_KEY] == ProcessStatus.ERROR:
+                if META_DATA_ATTEMPTS_KEY in file.metadata:
+                    attempts = int(file.metadata[META_DATA_ATTEMPTS_KEY])
+                    if attempts < MAX_PREPROCESSING_ATTEMPTS:
+                        return file.key
     return None
+
+
+def extractDateFromFileName(key):
+    return key[17:25]
+
+
+def isPreprocessPendingFile(bucketName):
+    configuration = getDefaultConfigurationFile()
+    META_DATA_STATUS_KEY = configuration["META_DATA_STATUS_KEY"]
+    META_DATA_ATTEMPTS_KEY = configuration["META_DATA_ATTEMPTS_KEY"]
+    MAX_PREPROCESSING_ATTEMPTS = int(configuration["MAX_PREPROCESSING_ATTEMPTS"])
+
+    s3 = boto3.resource("s3")
+
+    bucket = s3.Bucket(bucketName)
+
+    for key in bucket.objects.all():
+        # print(key.key)
+        file = s3.Object(bucketName, key.key)
+        dateOfFile = extractDateFromFileName(file.key)
+        year = dateOfFile[0:4]
+        month = dateOfFile[4:6]
+        if year == "2017" and month == "06":
+            if META_DATA_STATUS_KEY not in file.metadata:
+                return True
+            elif file.metadata[META_DATA_STATUS_KEY] == ProcessStatus.ERROR:
+                if META_DATA_ATTEMPTS_KEY in file.metadata:
+                    attempts = int(file.metadata[META_DATA_ATTEMPTS_KEY])
+                    if attempts < MAX_PREPROCESSING_ATTEMPTS:
+                        return True
+
+    return False
 
 
 def deleteMessage(receipt_handle):
     sqs = boto3.client('sqs')
-    queue_url = 'https://sqs.eu-central-1.amazonaws.com/837005286527/preprocess_image_queue'
+    configuration = getDefaultConfigurationFile()
+
+    queue_url = configuration["queue_url"]
 
     sqs.delete_message(
         QueueUrl=queue_url,
@@ -110,7 +152,8 @@ def downloadFile(writeble_path, filename, bucket_path):
     # s3_client.download_file(bucket_name, filename, writeble_path + filename)
 
     # download_command = "aws s3 cp s3://%s/%s %s" % (bucket_path, filename, writeble_path + filename)
-    download_command = ["aws", "s3", "cp", "s3://%s/%s" % (bucket_path, filename), writeble_path + filename]
+    download_command = ["/home/ubuntu/anaconda2/bin/aws", "s3", "cp", "s3://%s/%s" % (bucket_path, filename),
+                        writeble_path + filename]
     print download_command
 
     try:
@@ -121,9 +164,10 @@ def downloadFile(writeble_path, filename, bucket_path):
         # This makes the wait possible
         p_status = p.wait()
         print "Command output: " + output
-    except:
+    except Exception as err:
         print "Error: unable to download"
         traceback.print_exc(file=sys.stdout)
+        raise err
 
 
 def uploadFolder(writeble_path, folder_name, bucket_path):
@@ -136,7 +180,8 @@ def uploadFolder(writeble_path, folder_name, bucket_path):
     # s3_client.download_file(bucket_name, filename, writeble_path + filename)
     print "uploading folder"
     # upload_command = "aws s3 cp %s%s s3://%s/%s/ --recursive" % (writeble_path, folder_name, bucket_path, folder_name)
-    upload_command = ["aws", "s3", "cp", writeble_path + folder_name, "s3://%s/%s/" % (bucket_path, folder_name),
+    upload_command = ["/home/ubuntu/anaconda2/bin/aws", "s3", "cp", writeble_path + folder_name,
+                      "s3://%s/%s/" % (bucket_path, folder_name),
                       "--recursive"]
     print upload_command
 
@@ -163,7 +208,7 @@ def uploadFile(file_path, bucket_path):
     # s3_client.download_file(bucket_name, filename, writeble_path + filename)
     print "uploading file"
     # upload_command = "aws s3 cp %s s3://%s/" % (file_path, bucket_path)
-    upload_command = ["aws", "s3", "cp", file_path, "s3://%s/" % bucket_path]
+    upload_command = ["/home/ubuntu/anaconda2/bin/aws", "s3", "cp", file_path, "s3://%s/" % bucket_path]
     print upload_command
 
     try:
@@ -181,7 +226,9 @@ def uploadFile(file_path, bucket_path):
 
 def sendNotificationMessage(filename, attempts=0):
     sqs = boto3.client('sqs')
-    queue_url = 'https://sqs.eu-central-1.amazonaws.com/837005286527/preprocess_image_queue'
+    configuration = getDefaultConfigurationFile()
+
+    queue_url = configuration["queue_url"]
 
     messageBody = {"Records": [{"eventVersion": "2.0", "eventSource": "aws:s3", "awsRegion": "eu-central-1",
                                 "eventTime": "%s" % time.ctime(time.time()),
@@ -196,7 +243,7 @@ def sendNotificationMessage(filename, attempts=0):
                                                   "arn": "arn:aws:s3:::s1-datastore"},
                                        "object": {
                                            "key": filename,
-                                           "attempts": "%s" % (attempts + 1)
+                                           "attempts": "%s" % attempts
                                            # ,"eTag": "4e3f9b6694bb7dbef1a18f7e85e19e90-61",
                                            # "sequencer": "00595517ED16853079"
                                        }}}]}
@@ -242,3 +289,17 @@ def updateFileMetadata(bucketName, filename, metadata={}):
     file.metadata.update(metadata)
     file.copy_from(CopySource={"Bucket": bucketName, "Key": filename}, Metadata=file.metadata,
                    MetadataDirective="REPLACE")
+
+
+def stopInstance():
+    ec2 = boto3.resource('ec2')
+    instanceId = urllib2.urlopen('http://169.254.169.254/latest/meta-data/instance-id').read()
+    ids = [instanceId]
+    ec2.instances.filter(InstanceIds=ids).stop()
+
+
+def terminateInstance():
+    ec2 = boto3.resource('ec2')
+    instanceId = urllib2.urlopen('http://169.254.169.254/latest/meta-data/instance-id').read()
+    ids = [instanceId]
+    ec2.instances.filter(InstanceIds=ids).terminate()

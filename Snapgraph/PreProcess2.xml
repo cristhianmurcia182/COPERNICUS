@@ -3,7 +3,9 @@
   <node id="Read">
     <operator>Read</operator>
     <sources/>
-    <parameters class="com.bc.ceres.binding.dom.XppDomElement"/>
+    <parameters class="com.bc.ceres.binding.dom.XppDomElement">
+      <file>${filename}</file>
+    </parameters>
   </node>
   <node id="Calibration">
     <operator>Calibration</operator>
@@ -12,38 +14,50 @@
     </sources>
     <parameters class="com.bc.ceres.binding.dom.XppDomElement">
       <sourceBands/>
-      <auxFile>Latest Auxiliary File</auxFile>
+      <auxFile>Product Auxiliary File</auxFile>
       <externalAuxFile/>
       <outputImageInComplex>false</outputImageInComplex>
       <outputImageScaleInDb>false</outputImageScaleInDb>
       <createGammaBand>false</createGammaBand>
       <createBetaBand>false</createBetaBand>
-      <selectedPolarisations/>
+      <selectedPolarisations>VH</selectedPolarisations>
       <outputSigmaBand>true</outputSigmaBand>
       <outputGammaBand>false</outputGammaBand>
       <outputBetaBand>false</outputBetaBand>
     </parameters>
   </node>
-  <node id="Write">
-    <operator>Write</operator>
+  <node id="LinearToFromdB">
+    <operator>LinearToFromdB</operator>
     <sources>
       <sourceProduct refid="Calibration"/>
     </sources>
     <parameters class="com.bc.ceres.binding.dom.XppDomElement">
-      <file>D:\ifgi\Copernicus\Snap automation\Output\${outputfilename}.dim</file>
+      <sourceBands/>
+    </parameters>
+  </node>
+  <node id="Write">
+    <operator>Write</operator>
+    <sources>
+      <sourceProduct refid="LinearToFromdB"/>
+    </sources>
+    <parameters class="com.bc.ceres.binding.dom.XppDomElement">
+      <file>${outputfilename}</file>
       <formatName>BEAM-DIMAP</formatName>
     </parameters>
   </node>
   <applicationData id="Presentation">
     <Description/>
     <node id="Read">
-            <displayPosition x="37.0" y="134.0"/>
+            <displayPosition x="59.0" y="20.0"/>
     </node>
     <node id="Calibration">
-      <displayPosition x="245.0" y="135.0"/>
+      <displayPosition x="61.0" y="81.0"/>
+    </node>
+    <node id="LinearToFromdB">
+      <displayPosition x="114.0" y="159.0"/>
     </node>
     <node id="Write">
-            <displayPosition x="455.0" y="135.0"/>
+            <displayPosition x="249.0" y="214.0"/>
     </node>
   </applicationData>
 </graph>
