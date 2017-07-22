@@ -275,10 +275,10 @@ def getFileMetadata(bucketName, filename, key):
 
     file = s3.Object(bucketName, filename)
 
-    if key is not file.metadata:
-        return None
+    if key in file.metadata:
+        return file.metadata[key]
 
-    return file.metadata[key]
+    return None
 
 
 def updateFileMetadata(bucketName, filename, metadata={}):

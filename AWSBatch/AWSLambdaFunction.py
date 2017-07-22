@@ -8,6 +8,7 @@ import boto3
 from botocore.compat import total_seconds
 
 from Snapgraph.AWSFunctions import getDefaultConfigurationFile
+from Snapgraph.enumerations import ProcessStatus
 
 configuration = getDefaultConfigurationFile()
 BUCKET_NAME_RAW_IMAGES = configuration["BUCKET_NAME_RAW_IMAGES"]
@@ -97,19 +98,34 @@ def getFileMetadata(bucketName, filename, key):
 
     file = s3.Object(bucketName, filename)
 
-    if key is not file.metadata:
-        return None
+    if key in file.metadata:
+        return file.metadata[key]
 
-    return file.metadata[key]
+    return None
 
 
-def lamda_function(event, context):
+def lambda_handler(event, context):
     try:
-        bucket = event['Records'][0]['s3']['bucket']['name']
+        bucketName = urllib.unquote_plus(event['Records'][0]['s3']['bucket']['name'].encode('utf8'))
         key = urllib.unquote_plus(event['Records'][0]['s3']['object']['key'].encode('utf8'))
 
+        META_DATA_STATUS = getFileMetadata(bucketName, key, "x-amz-meta-preprocessing-status")
+        META_DATA_ATTEMPTS = getFileMetadata(bucketName, key, "x-amz-meta-preprocessing-attempts")
+        MAX_PREPROCESSING_ATTEMPTS = 3
+
         args = createJobArgument(key)
-        submitJob(args, key)
+
+        print "The file %s/%s is in the status %s" % (bucketName, key, META_DATA_STATUS)
+
+        if META_DATA_STATUS is None:
+            submitJob(args, key)
+        elif META_DATA_STATUS == "ERROR":
+            if META_DATA_ATTEMPTS is not None:
+                attempts = int(META_DATA_ATTEMPTS)
+
+                if attempts < MAX_PREPROCESSING_ATTEMPTS:
+                    submitJob(args, key)
+
     except Exception as e:
         print(e)
         print(

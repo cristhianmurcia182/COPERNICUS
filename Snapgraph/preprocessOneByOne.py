@@ -108,22 +108,35 @@ def readFiles(input_filename):
 
         filename = input_filename
 
-        # if receipt_handle is None:
-        #     return
-        # if attempts >= MAX_PREPROCESSING_ATTEMPTS:
-        #     return
-
-        # deleteMessage(receipt_handle)
-
-        print "downloading raw image %s" % input_filename
-        logging.info("downloading raw image %s" % input_filename)
+        META_DATA_STATUS = getFileMetadata(BUCKET_NAME_RAW_IMAGES, input_filename, "x-amz-meta-preprocessing-status")
+        META_DATA_ATTEMPTS = getFileMetadata(BUCKET_NAME_RAW_IMAGES, input_filename, "x-amz-meta-preprocessing-attempts")
         attemptsString = getFileMetadata(BUCKET_NAME_RAW_IMAGES, input_filename, META_DATA_ATTEMPTS_KEY)
         if attemptsString is None:
             attempts = 0
         else:
             attempts = int(attemptsString)
 
+        continuePreprocessing = False
+        if META_DATA_STATUS is None:
+            continuePreprocessing = True
+        elif META_DATA_STATUS == "ERROR":
+            if META_DATA_ATTEMPTS is not None:
+                attempts = int(META_DATA_ATTEMPTS)
+
+                if attempts < MAX_PREPROCESSING_ATTEMPTS:
+                    continuePreprocessing = True
+
+        if not continuePreprocessing:
+            print "Image %s already preprocessed with status %s" % (input_filename, META_DATA_STATUS)
+            logging.info("Image %s already preprocessed with status %s" % (input_filename, META_DATA_STATUS))
+            return
+
         attempts = attempts + 1
+
+        # deleteMessage(receipt_handle)
+
+        print "downloading raw image %s" % input_filename
+        logging.info("downloading raw image %s" % input_filename)
 
         updateFileMetadata(BUCKET_NAME_RAW_IMAGES, input_filename,
                            {
@@ -486,7 +499,7 @@ def main():
 
         readFiles(filename)
     except Exception as e:
-        error_message = "Orbit error: {0}".format(e)
+        error_message = "General error: {0}".format(e)
         print "Error: unable to connect %s" % error_message
         logging.error(error_message)
         traceback.print_exc(file=sys.stdout)
@@ -527,3 +540,4 @@ class preprocessingThread(threading.Thread):
 print "Starting preprocess"
 main()
 print "Exiting preprocess"
+
