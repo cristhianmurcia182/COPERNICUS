@@ -17,7 +17,7 @@ from snappy import GPF
 from snappy import HashMap
 from snappy import ProductIO
 
-from Snapgraph.exceptions import VHBandNotIncludedException, VVBandNotIncludedException, OrbitNotIncludedException
+from preprocessExceptions import VHBandNotIncludedException, VVBandNotIncludedException, OrbitNotIncludedException
 
 
 def readMetadata(inputPath, name, toPrint=True):

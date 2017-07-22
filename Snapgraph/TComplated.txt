@@ -1,0 +1,16 @@
+<html>
+  <head></head>
+  <body>
+    <p>Pre-processing Images<br>
+       The state of your pre-process is @imageName@ <br>
+       Image name: <br>
+       @ProcessState@<br>
+       Date of the image:<br>
+       @imageDate@<br>
+       Date of the process:<br>
+       @DateofProcess@<br>
+       Hour of the process<br>
+       @HourProcess@<br>
+    </p>
+  </body>
+</html>

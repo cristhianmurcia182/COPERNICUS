@@ -10,9 +10,9 @@ import zipfile
 import catch_errors as ce
 from AWSFunctions import connect, uploadFile, \
     getDefaultConfigurationFile, sendNotificationMessage, updateFileMetadata, getFileMetadata, getNextFilename, \
-    downloadFile
+    downloadFile, isPreprocessPendingFile
 from Snapgraph.enumerations import ProcessStatus
-from Snapgraph.exceptions import OrbitNotIncludedException, VVBandNotIncludedException, VHBandNotIncludedException, \
+from Snapgraph.preprocessExceptions import OrbitNotIncludedException, VVBandNotIncludedException, VHBandNotIncludedException, \
     PreprocessedCommandException
 
 configuration = getDefaultConfigurationFile()
@@ -49,19 +49,7 @@ def writeProcessStatusFiles():
 writeProcessStatusFiles()
 
 
-def readFiles():
-    try:
-        connect()
-        #receipt_handle, filename, attempts = getNotificationIDAndResourceName()
-
-        filename = getNextFilename(BUCKET_NAME_RAW_IMAGES)
-
-    except:
-        error_message = "Error: unable to read next file"
-        print error_message
-        traceback.print_exc(file=sys.stdout)
-        sendNotification(Exception(), error_message, None, 0)
-
+def readFiles(filename):
     try:
         if filename is None:
             return
@@ -86,6 +74,7 @@ def readFiles():
                                META_DATA_ATTEMPTS_KEY: "%s" % (attempts + 1)
                            })
         downloadFile(inputPath, filename, BUCKET_NAME_RAW_IMAGES)
+        zipfile()
 
         print "starting preprocessing"
 
@@ -94,18 +83,21 @@ def readFiles():
 
         if ce.checkMissingFiles(inputPath, filename):
             startTime = time.time()
-            thread.start_new_thread(preprocessImage, (filename))
-            pid = getProcessID(filename)
+
             processStatusJSon = processStatusPath + "processing.json"
             data = readProcessStatusInJson(processStatusJSon)
             jsonData = {
-                "pid": pid,
                 "status: ": ProcessStatus.PROCESSING,
                 "starttime": startTime
             }
-
             addProcessStatusDataToJson(filename, data, jsonData)
             writeProcessStatusInJson(processStatusJSon, data)
+
+            preprocessImage(filename)
+
+
+
+
     except OrbitNotIncludedException as err:
         error_message = "Orbit error: {0}".format(err)
         print(error_message)
@@ -180,7 +172,6 @@ def preprocessImage(filename):
     data = readProcessStatusInJson(processStatusJSon)
 
     jsonData = {
-        "pid": processingStatus["pid"],
         "status: ": ProcessStatus.PROCESSED,
         "starttime": processingStatus["starttime"],
         "endtime": endTime
@@ -240,14 +231,15 @@ def zipDirectory(path, folder_name):
     zip_filename = folder_name + ".zip"
     zipf = zipfile.ZipFile(path + zip_filename, "w", zipfile.ZIP_DEFLATED, allowZip64=True)
 
-    for root, dirs, files in os.walk(path):
-        for file in files:
-            if zip_filename != file:
+    try:
+        for root, dirs, files in os.walk(path + folder_name):
+            for file in files:
                 absolute_path = os.path.join(root, file)
                 relative_path = absolute_path.replace(path, "")
                 zipf.write(os.path.join(root, file), relative_path)
 
-    zipf.close()
+    except:
+        zipf.close()
 
     return zip_filename
 
@@ -260,23 +252,28 @@ def sendNotification(error, error_message, filename, attempts):
         traceback.print_exc(file=sys.stdout)
 
 
-try:
-    readFiles()
-except:
-    print "Error: unable to start thread"
-    traceback.print_exc(file=sys.stdout)
-    sendNotification(Exception(), "Unknown error")
+# def isProcessing():
+#     time.sleep(10)
+#     processStatusJSon = processStatusPath + "processing.json"
+#     data = readProcessStatusInJson(processStatusJSon)
+#     if data:
+#         return True
+#
+#     return False
 
+counter = 0
+while isPreprocessPendingFile(BUCKET_NAME_RAW_IMAGES):
+    try:
+        if counter > 200:
+            break
 
-def isProcessing():
-    time.sleep(10)
-    processStatusJSon = processStatusPath + "processing.json"
-    data = readProcessStatusInJson(processStatusJSon)
-    if data:
-        return True
+        counter = counter + 1
 
-    return False
+        connect()
+        filename = getNextFilename(BUCKET_NAME_RAW_IMAGES)
+        readFiles(filename)
 
-
-while isProcessing():
-    pass
+    except:
+        print "Error: unable to start thread"
+        traceback.print_exc(file=sys.stdout)
+        sendNotification(Exception(), "Unknown error")
