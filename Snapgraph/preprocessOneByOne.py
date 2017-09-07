@@ -46,6 +46,8 @@ MAIL_ACCOUNT_PASSWORD = configuration["MAIL_ACCOUNT_PASSWORD"]
 MAIL_ACCOUNT_RECIVER = configuration["MAIL_ACCOUNT_RECIVER"]
 SNAP_TEMP_PATH = configuration["SNAP_TEMP_PATH"]
 LOG_PATH = configuration["LOG_PATH"]
+ORBIT_PATH = configuration["ORBIT_PATH"]
+META_DATA_ORBIT_USED_KEY = configuration["META_DATA_ORBIT_USED_KEY"]
 
 logging.basicConfig(filename=LOG_PATH, level=logging.DEBUG)
 
@@ -324,7 +326,9 @@ def preprocessImage(input_filename, filename):
     addProcessStatusDataToJson(filename, data, jsonData)
     writeProcessStatusInJson(processStatusJSon, data)
 
-    updateFileMetadata(BUCKET_NAME_RAW_IMAGES, input_filename, {META_DATA_STATUS_KEY: ProcessStatus.PROCESSED})
+    orbitUsed = ce.imageOrbit(inputPath + input_filename, ORBIT_PATH)
+
+    updateFileMetadata(BUCKET_NAME_RAW_IMAGES, input_filename, {META_DATA_STATUS_KEY: ProcessStatus.PROCESSED, META_DATA_ORBIT_USED_KEY: orbitUsed})
 
     return noneExtensionFilename + outputFileExtension
 

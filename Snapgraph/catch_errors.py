@@ -33,15 +33,15 @@ def readMetadata(inputPath, name, toPrint=True):
     name = product.getName()
     band_names = list(product.getBandNames())
 
-    params = HashMap()
-    orbit = GPF.createProduct("Apply-Orbit-File", params, product)
-    orbit = orbit.getName()
+    # params = HashMap()
+    # orbit = GPF.createProduct("Apply-Orbit-File", params, product)
+    # orbit = orbit.getName()
 
     metadata["name"] = name
     metadata["band_names"] = band_names
     metadata["width"] = width
     metadata["heigth"] = height
-    metadata["orbit"] = orbit
+    # metadata["orbit"] = orbit
 
     if toPrint:
         print("Product: %s, %d x %d pixels" % (name, width, height))
@@ -51,16 +51,15 @@ def readMetadata(inputPath, name, toPrint=True):
 
 def checkMissingFiles(inputPath, name):
     metadata = readMetadata(inputPath, name, toPrint=False)
-    o = metadata["orbit"]
+    # o = metadata["orbit"]
     if 'Amplitude_VH' not in metadata["band_names"]:
         # return False
         raise VHBandNotIncludedException("VH Band not defined for the image %s" % name)
     elif 'Amplitude_VV' not in metadata["band_names"]:
         # return False
         raise VVBandNotIncludedException("VV Band not defined for the image %s" % name)
-    elif o[-3:] != 'Orb':
-        # return False
-        raise OrbitNotIncludedException("Orbit not defined for the image %s" % name)
+    # elif o[-3:] != 'Orb':
+    #    raise OrbitNotIncludedException("Orbit not defined for the image %s" % name)
 
     return True
 
